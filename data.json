@@ -1,0 +1,43 @@
+{
+  "users": [],
+  "transactions": [
+    {
+      "type": "deposit",
+      "amount": 50000,
+      "fee": 0,
+      "netAmount": 50000,
+      "status": "completed",
+      "id": "105e7f54-8f5e-4a10-a45a-015b60134417",
+      "createdAt": "2025-09-07T01:33:17.911Z"
+    },
+    {
+      "type": "deposit",
+      "amount": 50000,
+      "fee": 0,
+      "netAmount": 50000,
+      "status": "completed",
+      "id": "c2fa717c-f9f2-4694-b47e-aa07d42cd222",
+      "createdAt": "2025-09-07T01:33:19.810Z"
+    },
+    {
+      "type": "withdrawal",
+      "amount": 200,
+      "fee": 1.5,
+      "netAmount": 198.5,
+      "status": "completed",
+      "stripePayoutId": "payout_1757209039536",
+      "paymentMethodId": "card_test_0987654321",
+      "paymentMethodName": "Visa Debit",
+      "id": "cacce21a-ecd4-4cfe-96d0-fcb41baeea4c",
+      "createdAt": "2025-09-07T01:37:19.536Z"
+    }
+  ],
+  "balance": {
+    "id": "d34cd4a8-baca-4938-9c70-dc3242995722",
+    "currentBalance": 99800,
+    "totalAdded": 100000,
+    "totalWithdrawn": 200,
+    "lastUpdated": "2025-09-07T01:37:19.536Z"
+  },
+  "userCards": []
+}

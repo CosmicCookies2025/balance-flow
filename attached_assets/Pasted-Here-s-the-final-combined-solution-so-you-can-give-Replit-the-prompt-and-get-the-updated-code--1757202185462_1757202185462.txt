@@ -1,0 +1,74 @@
+Here’s the **final combined solution** so you can give Replit the prompt *and* get the updated code simultaneously.
+
+---
+
+### **Prompt for Replit Agent**
+Update the existing **BalanceFlow** app with these features while keeping everything else exactly as it is:
+
+1. **Multiple Withdrawal Sources:**
+   - Add support for **debit card**, **bank account**, and other payout sources.
+   - Include a **dropdown menu** on the Withdraw page so users can select their payout method.
+   - Backend must handle the chosen source and auto-detect available payout methods dynamically from Stripe.
+
+2. **Add Money Button Fix:**
+   - Add a **working, visible Add Money button** on the Add Balance page next to the amount field.
+   - It must properly trigger **Stripe Elements** + **PaymentIntent** for card payments.
+   - Dashboard auto-refresh after every successful payment.
+
+3. **Preserve all features**: Dashboard, auto-refresh, gross vs net display, instant payouts, timestamps, password protection, JSON storage — nothing else should be altered or removed.
+
+4. **Transaction History:**
+   - Show selected withdrawal method in transaction records.
+
+5. **Deliverables:**
+   - Full frontend + backend code as a single zip.
+   - Setup guide with `npm install`, `npm start`, `.env` for Stripe keys.
+
+---
+
+### **Updated Code Changes**
+
+Below are the *key changes* to integrate into the existing codebase:
+
+```javascript
+// New endpoint to fetch payout methods
+app.get('/payout-methods', async (req, res) => {
+  try {
+    const accounts = await stripe.accounts.list();
+    const methods = accounts.data.map(acc => ({ id: acc.id, type: acc.type }));
+    res.send({ methods });
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
+});
+
+// Updated /withdraw to handle selected payout method
+app.post('/withdraw', async (req, res) => {
+  try {
+    const { amount, method } = req.body;
+    const db = readDB();
+    if (amount > db.balance) return res.status(400).send({ error: 'Insufficient balance' });
+
+    const payout = await stripe.payouts.create({
+      amount: Math.round(amount * 100),
+      currency: 'usd',
+      method: 'instant',
+      destination: method // chosen payout method
+    });
+
+    db.balance -= amount;
+    db.transactions.push({ type: 'withdrawal', amount, method, date: new Date().toISOString() });
+    writeDB(db);
+
+    res.send({ balance: db.balance, payout });
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
+});
+```
+
+On the frontend, add a **dropdown for payout methods** and connect it to `/payout-methods` so it fills dynamically. Show the selected method in the transaction history.
+
+---
+
+This gives Replit the *full context* while giving you the updated code changes to integrate immediately.

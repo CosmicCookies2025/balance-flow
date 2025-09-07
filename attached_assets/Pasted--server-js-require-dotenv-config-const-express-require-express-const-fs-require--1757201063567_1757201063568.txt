@@ -1,0 +1,127 @@
+// server.js
+require('dotenv').config();
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.static('public'));
+app.use(express.json());
+
+const dbFile = path.join(__dirname, 'db.json');
+if (!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, JSON.stringify({ balance: 0, transactions: [] }));
+
+const readDB = () => JSON.parse(fs.readFileSync(dbFile));
+const writeDB = data => fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
+
+app.post('/create-payment-intent', async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100),
+      currency: 'usd'
+    });
+    res.send({ clientSecret: paymentIntent.client_secret });
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
+});
+
+app.post('/add-balance', (req, res) => {
+  const { amount } = req.body;
+  const db = readDB();
+  db.balance += amount;
+  db.transactions.push({ type: 'deposit', amount, date: new Date().toISOString() });
+  writeDB(db);
+  res.send({ balance: db.balance });
+});
+
+app.post('/withdraw', async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const db = readDB();
+    if (amount > db.balance) return res.status(400).send({ error: 'Insufficient balance' });
+
+    // Create payout (requires Stripe balance from real payments)
+    const payout = await stripe.payouts.create({
+      amount: Math.round(amount * 100),
+      currency: 'usd',
+      method: 'instant'
+    });
+
+    db.balance -= amount;
+    db.transactions.push({ type: 'withdrawal', amount, date: new Date().toISOString() });
+    writeDB(db);
+
+    res.send({ balance: db.balance, payout });
+  } catch (err) {
+    res.status(500).send({ error: err.message });
+  }
+});
+
+app.get('/transactions', (req, res) => {
+  res.send(readDB());
+});
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// public/index.html
+/*
+<!DOCTYPE html>
+<html>
+<head>
+  <title>BalanceFlow</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <h1>BalanceFlow Dashboard</h1>
+  <div id="balance">Loading...</div>
+  <input id="amount" type="number" placeholder="Amount">
+  <button id="addMoney">Add Balance</button>
+  <button id="withdrawMoney">Withdraw</button>
+  <ul id="transactions"></ul>
+  <script src="app.js"></script>
+</body>
+</html>
+*/
+
+// public/app.js
+/*
+async function fetchBalance() {
+  const res = await fetch('/transactions');
+  const data = await res.json();
+  document.getElementById('balance').innerText = `Balance: $${data.balance.toFixed(2)}`;
+  document.getElementById('transactions').innerHTML = data.transactions.map(t => `<li>${t.type}: $${t.amount} on ${t.date}</li>`).join('');
+}
+
+fetchBalance();
+
+const amountInput = document.getElementById('amount');
+
+document.getElementById('addMoney').onclick = async () => {
+  const amount = parseFloat(amountInput.value);
+  if (!amount || amount <= 0) return alert('Enter valid amount');
+  await fetch('/add-balance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount }) });
+  fetchBalance();
+};
+
+document.getElementById('withdrawMoney').onclick = async () => {
+  const amount = parseFloat(amountInput.value);
+  if (!amount || amount <= 0) return alert('Enter valid amount');
+  const res = await fetch('/withdraw', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount }) });
+  const data = await res.json();
+  if (data.error) alert(data.error);
+  fetchBalance();
+};
+*/
+
+// public/style.css
+/*
+body { font-family: sans-serif; background: #111; color: #fff; text-align: center; }
+input, button { margin: 10px; padding: 10px; }
+ul { list-style: none; padding: 0; }
+*/
