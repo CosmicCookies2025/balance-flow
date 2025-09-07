@@ -489,7 +489,7 @@ export default function Withdraw() {
                       setClientSecret("");
                       queryClient.invalidateQueries({ queryKey: ['/api/balance'] });
                       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-                                   }} 
+                                   } 
                   />
                 </Elements>
               )}
