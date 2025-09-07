@@ -109,12 +109,11 @@ function StripePayoutForm({ clientSecret, amount, onSuccess }: {
                 <CreditCard className="w-4 h-4 mr-2" />
                 Send ${netAmount.toFixed(2)} via Stripe Payout
               </>
-            )}
+            )
           </Button>
         </form>
       </CardContent>
     </Card>
   );
-}
 
-export default function WithdrawPage() {
+export default function WithdrawPage
